@@ -398,6 +398,17 @@ class AtomEnvironment extends Model
   onDidFailAssertion: (callback) ->
     @emitter.on 'did-fail-assertion', callback
 
+  # Extended: Invoke the given callback as soon as the shell environment is
+  # loaded (or immediately if it was already loaded).
+  #
+  # * `callback` {Function} to be called whenever there is an unhandled error
+  whenShellEnvironmentLoaded: (callback) ->
+    if @shellEnvironmentLoaded
+      callback()
+      new Disposable()
+    else
+      @emitter.on 'loaded-shell-environment', callback
+
   ###
   Section: Atom Details
   ###
@@ -662,6 +673,8 @@ class AtomEnvironment extends Model
     @unloaded = false
     updateProcessEnvPromise = updateProcessEnv(@getLoadSettings().env)
     updateProcessEnvPromise.then =>
+      @shellEnvironmentLoaded = true
+      @emitter.emit('loaded-shell-environment')
       @packages.triggerActivationHook('core:loaded-shell-environment')
 
     loadStatePromise = @loadState().then (state) =>
